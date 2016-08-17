@@ -4,7 +4,6 @@ var ReactDOM = require('react-dom');
 var ReactRouter = require('react-router');
 var Router = ReactRouter.Router;
 var Route = ReactRouter.Route;
-var Navigation = ReactRouter.Navigation;
 var History = ReactRouter.History;
 var createBrowserHistory = require('history/lib/createBrowserHistory');
 
@@ -25,19 +24,30 @@ var App = React.createClass({
       order : {}
     }
   },
-
   componentDidMount : function() {
     base.syncState(this.props.params.storeId + '/fishes',  {
       context : this,
       state : 'fishes'
     });
+
+    var localStorageRef = localStorage.getItem('order-' + this.props.params.storeId);
+
+    if(localStorageRef) {
+      // update our component state to reflect what is in local storage
+      this.setState({
+        order: JSON.parse(localStorageRef)
+      });
+    }
+  },
+
+  componentWillUpdate : function(nextProps, nextState) {
+    localStorage.setItem('order-' + this.props.params.storeId, JSON.stringify(nextState.order));
   },
 
   addToOrder : function(key) {
     this.state.order[key] = this.state.order[key] + 1 || 1;
     this.setState({ order : this.state.order });
   },
-
   addFish : function(fish) {
     var timestamp = (new Date()).getTime();
     // update the state object
@@ -45,18 +55,15 @@ var App = React.createClass({
     // set the state
     this.setState({ fishes : this.state.fishes });
   },
-
   loadSamples : function() {
     this.setState({
       fishes : require('./sample-fishes')
     });
   },
-
   renderFish : function(key) {
     return <Fish key={key} index={key} details={this.state.fishes[key]}
     addToOrder={this.addToOrder} />
   },
-
 
   render : function() {
     return (
@@ -141,7 +148,7 @@ var Header = React.createClass({
       }
 
       return (
-        <li>
+        <li key={key}>
           {count}lbs
           {fish.name}
           <span className="price">{h.formatPrice(count * fish.price)}</span>
